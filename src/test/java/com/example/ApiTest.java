@@ -2,23 +2,41 @@ package com.example;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class ApiTest {
+    static String token = null;
 
+    @BeforeAll
+    public static void beforeAllOnce(){
+        RestAssured.baseURI = "http://localhost:5000";
+        token =
+                given()
+                .contentType(ContentType.JSON)
+                .body("{\n" +
+                        "  \"email\":\"employee1@example.com\", \"password\":\"test123\"\n" +
+                        "}")
+                        .log().all()
+                .when()
+                .post("/api/auth/login")
+                .then()
+                        .log().all()
+                .extract()
+                .response()
+                .path("token");
+
+
+
+    }
     @Test
     public void getAllPhonesWithAuth() {
-
-        String token = "Tokenı girmeniz gerek";
-
-
-        RestAssured.baseURI = "http://localhost:5000"; // kendi IP:Port’unu yaz
-
         given()
-                .header("Authorization", "Bearer " + token)
+                .auth().oauth2(token)
+
                 .accept(ContentType.JSON)
                 .log().all()
                 .when()
@@ -36,13 +54,7 @@ public class ApiTest {
 
     @Test
     public void postPhone_ShouldReturnCreatedStatusAndValidResponse() {
-
-        RestAssured.baseURI = "http://localhost:5000";
-        String token = "Tokenı girmeniz gerek";
-
         String uniqueIMEI = "99999999999" + (System.currentTimeMillis() % 10000);
-
-
         String jsonBody = "{\n" +
                 "  \"brand\": \"Xiaomi\",\n" +
                 "  \"model\": \"Redmi Note 12\",\n" +
@@ -53,7 +65,7 @@ public class ApiTest {
 
 
         given()
-                .header("Authorization", token)
+                .auth().oauth2(token)
                 .contentType(ContentType.JSON)
                 .accept(ContentType.JSON)
                 .body(jsonBody)
